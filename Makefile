@@ -15,9 +15,9 @@ clean: clean-modeldoc clean-site clean-release-assets ## Clean all
 
 #
 # Website generation / hugo
-#
-
-REVISIONS:=develop $(shell ./support/list_revisions.sh)
+PROTOTYPE_BRANCHES_REMOTE:=origin
+PROTOTYPE_BRANCHES_PREFIX:=""
+REVISIONS:=develop $(shell PROTOTYPE_BRANCHES_REMOTE="$(PROTOTYPE_BRANCHES_REMOTE)" PROTOTYPE_BRANCHES_PREFIX="$(PROTOTYPE_BRANCHES_PREFIX)" ./support/list_revisions.sh)
 MODELDOC_CONTENT_DIR:=site/content/models
 MODELDOC_REVISION_CONTENT_DIR:=$(patsubst %,$(MODELDOC_CONTENT_DIR)/%/,$(REVISIONS))
 MODELDOC_DATA_DIR:=site/data/models
