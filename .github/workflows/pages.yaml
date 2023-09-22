@@ -4,8 +4,21 @@ on:
     branches:
       - main
   pull_request: {}
+  workflow_dispatch:
+    inputs:
+      revisions:
+        description: 'Override the computed list of tags and branches with a space-separated list of tags and branches, in order from first to last.'
+        required: false
+      prefix:
+        description: 'Provide a prefix for experimental branches that need to be published alongside tags. It is ignored if revisions is overriden.'
+        required: false
+        type: string
 jobs:
   deploy:
+    env:
+      REVISIONS: ${{ github.event.inputs.revisions != '' && github.event.inputs.revisions ||  format('{0}', 'unset')  }}
+      # the default of is set below so it continue to work whether or not it is an interactive workflow dispatch or not.
+      PROTOTYPE_BRANCHES_PREFIX: ${{ github.event.inputs.prefix != '' && github.event.inputs.prefix ||  format('{0}', 'prototype')  }}
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
@@ -46,7 +59,12 @@ jobs:
       - name: Build
         # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
         # GHA runners have 2 CPUs
-        run: make site -j2
+        if: env.REVISIONS == 'unset'
+        run: make site -j2 PROTOTYPE_BRANCHES_PREFIX="${{ env.PROTOTYPE_BRANCHES_PREFIX }}"
+      - name: Build (revisions overriden)
+        # override revisions and prototype branch prefix ignored
+        if: env.REVISIONS != 'unset'
+        run: make site -j2 REVISIONS="${{ env.REVISIONS }}"
       - name: Deploy
         uses: peaceiris/actions-gh-pages@068dc23d9710f1ba62e86896f84735d869951305
         if: github.ref == 'refs/heads/main'
