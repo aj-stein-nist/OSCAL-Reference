@@ -7,18 +7,14 @@ on:
   workflow_dispatch:
     inputs:
       revisions:
-        description: 'Override the computed list of tags and branches with a space-separated list of tags and branches, in order from first to last.'
+        description: 'Override the computed list of tags and branches with a space-separated list of tags and branches, in order from first to last. Refer to Makefile REVISIONS declaration.'
         required: false
       prefix:
-        description: 'Provide a prefix for experimental branches that need to be published alongside tags. It is ignored if revisions is overriden.'
+        description: 'Provide a prefix for experimental branches that need to be published alongside tags. It is ignored if revisions is overridden. Refer to the PROTOTYPE_BRANCHES_PREFIX declaration.'
         required: false
         type: string
 jobs:
   deploy:
-    env:
-      REVISIONS: ${{ github.event.inputs.revisions != '' && github.event.inputs.revisions ||  format('{0}', 'unset')  }}
-      # the default of is set below so it continue to work whether or not it is an interactive workflow dispatch or not.
-      PROTOTYPE_BRANCHES_PREFIX: ${{ github.event.inputs.prefix != '' && github.event.inputs.prefix ||  format('{0}', 'prototype')  }}
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
@@ -59,12 +55,10 @@ jobs:
       - name: Build
         # https://docs.github.com/en/actions/using-github-hosted-runners/about-github-hosted-runners#supported-runners-and-hardware-resources
         # GHA runners have 2 CPUs
-        if: env.REVISIONS == 'unset'
-        run: make site -j2 PROTOTYPE_BRANCHES_PREFIX="${{ env.PROTOTYPE_BRANCHES_PREFIX }}"
-      - name: Build (revisions overriden)
-        # override revisions and prototype branch prefix ignored
-        if: env.REVISIONS != 'unset'
-        run: make site -j2 REVISIONS="${{ env.REVISIONS }}"
+        run: |
+          make site -j2 \
+            ${{ github.event.inputs.revisions != '' && format('REVISIONS=''{0}''', github.event.inputs.revisions) || '' }} \
+            ${{ github.event.inputs.revisions == '' && github.event.inputs.prefix && format('PROTOTYPE_BRANCHES_PREFIX=''{0}''', github.event.inputs.prefix) || '' }}
       - name: Deploy
         uses: peaceiris/actions-gh-pages@068dc23d9710f1ba62e86896f84735d869951305
         if: github.ref == 'refs/heads/main'
